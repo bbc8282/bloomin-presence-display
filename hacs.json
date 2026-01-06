@@ -1,0 +1,7 @@
+{
+  "name": "BLOOMIN Presence Display",
+  "render_readme": true,
+  "domains": ["bloomin_presence_display"],
+  "iot_class": "Local Polling"
+}
+

@@ -1,0 +1,90 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "BLOOMIN Presence Display Setup",
+        "data": {
+          "name": "Name",
+          "bloomin_ip": "BLOOMIN IP Address",
+          "person_entity": "Person Entity",
+          "image_source": "Image Source",
+          "media_folder": "Folder Name (in media directory)",
+          "image_path": "File Path (absolute or relative to media)",
+          "use_ble_wake": "Use BLE Wake (requires Bluetooth adapter)",
+          "ble_mac_address": "BLE MAC Address (format: AA:BB:CC:DD:EE:FF)",
+          "overlay_position": "Overlay Position",
+          "overlay_style": "Overlay Style",
+          "image_quality": "Image Quality (1-100)",
+          "overlay_badge_size": "Badge Size (10-200 pixels)",
+          "overlay_icon_size": "Icon Size (10-200 pixels)",
+          "overlay_font_size": "Font Size (8-72 pixels)",
+          "overlay_margin": "Overlay Margin (0-100 pixels)"
+        },
+        "description": "Configure BLOOMIN Presence Display. Choose 'Folder' to automatically use the latest image from a folder, or 'File' to use a specific image file. Images will be processed with presence status overlay when person entity state changes."
+      }
+    },
+    "error": {
+      "person_entity_not_found": "Person entity not found",
+      "image_path_not_found": "Image path not found",
+      "image_path_not_file": "Image path is not a file",
+      "image_path_required": "Image path is required when using file source",
+      "media_folder_required": "Media folder is required when using folder source",
+      "ble_mac_address_required": "BLE MAC address is required when BLE wake is enabled",
+      "invalid_ble_mac_address": "Invalid BLE MAC address format (expected: XX:XX:XX:XX:XX:XX)",
+      "device_wake_failed": "Could not wake device. Please verify IP address and BLE settings.",
+      "unknown": "Unknown error occurred"
+    },
+    "abort": {
+      "already_configured": "Already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "BLOOMIN Presence Display Options",
+        "data": {
+          "image_source": "Image Source",
+          "media_folder": "Folder Name (in media directory)",
+          "image_path": "File Path (absolute or relative to media)",
+          "overlay_position": "Overlay Position",
+          "overlay_style": "Overlay Style",
+          "image_quality": "Image Quality (1-100)",
+          "overlay_badge_size": "Badge Size (10-200 pixels)",
+          "overlay_icon_size": "Icon Size (10-200 pixels)",
+          "overlay_font_size": "Font Size (8-72 pixels)",
+          "overlay_margin": "Overlay Margin (0-100 pixels)",
+          "use_ble_wake": "Use BLE Wake",
+          "ble_mac_address": "BLE MAC Address"
+        },
+        "description": "Adjust overlay settings and BLE wake configuration."
+      }
+    }
+  },
+  "overlay": {
+    "home": "Home",
+    "away": "Away"
+  },
+  "services": {
+    "update_display": {
+      "name": "Update Display",
+      "description": "Manually update the BLOOMIN display with current presence status.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity",
+          "description": "The BLOOMIN Presence Display entity to update."
+        }
+      }
+    },
+    "force_refresh": {
+      "name": "Force Refresh",
+      "description": "Force an immediate refresh of the BLOOMIN display.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity",
+          "description": "The BLOOMIN Presence Display entity to refresh."
+        }
+      }
+    }
+  }
+}
+

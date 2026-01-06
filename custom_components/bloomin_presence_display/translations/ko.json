@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "BLOOMIN Presence Display 설정",
+        "data": {
+          "name": "이름",
+          "bloomin_ip": "BLOOMIN IP 주소",
+          "person_entity": "Person 엔티티",
+          "image_source": "이미지 소스",
+          "media_folder": "폴더 이름 (media 폴더 내)",
+          "image_path": "파일 경로 (절대 경로 또는 media 기준 상대 경로)",
+          "use_ble_wake": "BLE 깨우기 사용 (블루투스 어댑터 필요)",
+          "ble_mac_address": "BLE MAC 주소 (형식: AA:BB:CC:DD:EE:FF)",
+          "overlay_position": "오버레이 위치",
+          "overlay_style": "오버레이 스타일"
+        },
+        "description": "BLOOMIN Presence Display를 설정합니다. '폴더'를 선택하면 폴더 내 최신 이미지를 자동으로 사용하고, '파일'을 선택하면 특정 이미지 파일을 사용합니다. Person 엔티티 상태가 변경되면 재실 상태 오버레이가 자동으로 추가됩니다."
+      }
+    },
+    "error": {
+      "person_entity_not_found": "Person 엔티티를 찾을 수 없습니다",
+      "image_path_not_found": "이미지 경로를 찾을 수 없습니다",
+      "image_path_not_file": "이미지 경로가 파일이 아닙니다",
+      "image_path_required": "파일 소스를 사용하는 경우 이미지 경로가 필요합니다",
+      "media_folder_required": "폴더 소스를 사용하는 경우 미디어 폴더가 필요합니다",
+      "ble_mac_address_required": "BLE 깨우기를 사용하는 경우 BLE MAC 주소가 필요합니다",
+      "invalid_ble_mac_address": "잘못된 BLE MAC 주소 형식입니다 (예: AA:BB:CC:DD:EE:FF)",
+      "device_wake_failed": "디바이스를 깨울 수 없습니다. IP 주소와 BLE 설정을 확인해주세요.",
+      "unknown": "알 수 없는 오류가 발생했습니다"
+    },
+    "abort": {
+      "already_configured": "이미 설정되어 있습니다"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "BLOOMIN Presence Display 옵션",
+        "data": {
+          "image_source": "이미지 소스",
+          "media_folder": "폴더 이름 (media 폴더 내)",
+          "image_path": "파일 경로 (절대 경로 또는 media 기준 상대 경로)",
+          "overlay_position": "오버레이 위치",
+          "overlay_style": "오버레이 스타일",
+          "image_quality": "이미지 품질 (1-100)",
+          "overlay_badge_size": "배지 크기 (10-200 픽셀)",
+          "overlay_icon_size": "아이콘 크기 (10-200 픽셀)",
+          "overlay_font_size": "폰트 크기 (8-72 픽셀)",
+          "overlay_margin": "오버레이 여백 (0-100 픽셀)",
+          "use_ble_wake": "BLE 깨우기 사용",
+          "ble_mac_address": "BLE MAC 주소"
+        },
+        "description": "오버레이 설정 및 BLE 깨우기 설정을 조정합니다."
+      }
+    }
+  },
+  "overlay": {
+    "home": "집에 있음",
+    "away": "외출 중"
+  }
+}
+
