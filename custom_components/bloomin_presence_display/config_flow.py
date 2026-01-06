@@ -9,7 +9,7 @@ import aiohttp
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_ENTITY_ID, CONF_IP_ADDRESS, CONF_NAME
+from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import entity_registry as er
@@ -31,6 +31,7 @@ from .const import (
     CONF_OVERLAY_POSITION,
     CONF_OVERLAY_STYLE,
     CONF_PERSON_ENTITY,
+    CONF_PERSON_ENTITIES,
     CONF_USE_BLE_WAKE,
     DEFAULT_IMAGE_QUALITY,
     DEFAULT_IMAGE_SOURCE,
@@ -58,19 +59,50 @@ _LOGGER = logging.getLogger(__name__)
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input and test connection."""
-    # Validate person entity exists
+    # Validate person entities (support multiple, min 1, max 4)
     entity_registry = er.async_get(hass)
-    entity = entity_registry.async_get(data[CONF_PERSON_ENTITY])
-    if entity is None:
-        raise ValueError("person_entity_not_found")
+    person_entities = data.get(CONF_PERSON_ENTITIES, [])
     
-    # Validate image source configuration
+    # Support legacy single person entity
+    if not person_entities:
+        person_entity = data.get(CONF_PERSON_ENTITY)
+        if person_entity:
+            person_entities = [person_entity]
+    
+    if not person_entities:
+        raise ValueError("person_entities_required")
+    
+    if len(person_entities) > 4:
+        raise ValueError("person_entities_max_exceeded")
+    
+    # Validate all person entities exist
+    for person_entity_id in person_entities:
+        entity = entity_registry.async_get(person_entity_id)
+        if entity is None:
+            raise ValueError("person_entity_not_found")
+        if entity.domain != "person":
+            raise ValueError("person_entity_invalid_domain")
+    
+    # Create media folder if it doesn't exist (for folder source)
     image_source = data.get(CONF_IMAGE_SOURCE, DEFAULT_IMAGE_SOURCE)
     if image_source == IMAGE_SOURCE_FOLDER:
-        # Validate media folder exists
+        # Validate media folder name
         media_folder = data.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER)
         if not media_folder:
             raise ValueError("media_folder_required")
+        
+        # Create folder if it doesn't exist
+        from pathlib import Path
+        media_dir = Path(hass.config.media_dirs.get("local", hass.config.path("media")))
+        folder_path = media_dir / media_folder
+        
+        if not folder_path.exists():
+            try:
+                folder_path.mkdir(parents=True, exist_ok=True)
+                _LOGGER.info("Created media folder: %s", folder_path)
+            except (OSError, PermissionError) as e:
+                _LOGGER.warning("Failed to create media folder %s: %s. User should create it manually.", folder_path, e)
+                # Don't raise error - allow setup to continue
     elif image_source == IMAGE_SOURCE_FILE:
         # Validate image path exists
         image_path = data.get(CONF_IMAGE_PATH, "")
@@ -103,6 +135,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     
     # Test wake functionality to verify device connection
     # This helps ensure the device is reachable before completing setup
+    # Priority: BLE wake FIRST (matching bloomin8_bt_wake), then WiFi-based methods
     bloomin_ip = data.get(CONF_BLOOMIN_IP)
     use_ble_wake = data.get(CONF_USE_BLE_WAKE, False)
     ble_mac_address = data.get(CONF_BLE_MAC_ADDRESS, "")
@@ -110,13 +143,14 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     wake_success = False
     wake_method_used = None
     
-    # Try BLE wake first if enabled
+    # Priority 1: BLE wake MUST be tried first if enabled (matching bloomin8_bt_wake)
     if use_ble_wake and ble_mac_address:
         try:
             from .ble_wake import discover_ble_services, wake_device_via_ble
             
-            # Discover BLE services and characteristics
-            _LOGGER.info("Discovering BLE services during setup: %s", ble_mac_address)
+            # Try to discover BLE services and characteristics (optional)
+            # If discovery fails, default UUIDs will be used which should work for BLOOMIN8
+            _LOGGER.debug("Attempting BLE service discovery during setup: %s", ble_mac_address)
             discovered = await discover_ble_services(ble_mac_address, timeout=5.0)
             
             if discovered:
@@ -129,9 +163,13 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
                     discovered["characteristic_uuid"]
                 )
             else:
-                _LOGGER.warning(
-                    "BLE discovery failed, will use default UUIDs. "
-                    "Wake test may fail if defaults don't match your device."
+                # This is OK - default UUIDs are known to work for BLOOMIN8
+                # Import default UUID from ble_wake module
+                from .ble_wake import DEFAULT_BLE_CHARACTERISTIC_UUID
+                _LOGGER.debug(
+                    "BLE discovery skipped or failed (this is OK). "
+                    "Will use default UUIDs: characteristic=%s",
+                    DEFAULT_BLE_CHARACTERISTIC_UUID
                 )
             
             # Test BLE wake with discovered or default UUIDs
@@ -146,12 +184,13 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
                 _LOGGER.info("BLE wake test successful during setup")
                 wake_method_used = "BLE"
             else:
-                _LOGGER.debug("BLE wake test failed, will try other methods")
+                _LOGGER.warning("BLE wake test failed, trying WiFi-based fallback methods")
         except Exception as e:
-            _LOGGER.debug("BLE wake test error: %s", e)
+            _LOGGER.warning("BLE wake test error: %s. Trying WiFi-based fallback methods.", e)
     
-    # Try eink_display.whistle service
+    # Priority 2: Try WiFi-based wake methods as fallback (if BLE wake failed or not enabled)
     if not wake_success:
+        # Try eink_display.whistle service
         try:
             # Find BLOOMIN entity by IP
             for entity_id, entity in entity_registry.entities.items():
@@ -176,40 +215,15 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         except Exception as e:
             _LOGGER.debug("eink_display.whistle service lookup error: %s", e)
     
-    # Try HTTP API wake as fallback
+    # Priority 3: Try HTTP API wake as fallback
     if not wake_success:
         try:
             from .bloomin_api import BloominAPI
             
-            # Discover API endpoints
-            _LOGGER.info("Discovering API endpoints for device: %s", bloomin_ip)
+            # Note: Image upload is handled by bloomin8_eink_canvas integration via media_player.play_media
+            # We only test wake functionality here (HTTP API fallback)
+            _LOGGER.debug("Testing HTTP API wake for device: %s", bloomin_ip)
             api = BloominAPI(bloomin_ip)
-            discovered_endpoints = await api.discover_api_endpoints()
-            
-            if discovered_endpoints:
-                # Store discovered endpoints in data
-                if "upload" in discovered_endpoints:
-                    data["api_upload_endpoint"] = discovered_endpoints["upload"]
-                if "wake" in discovered_endpoints:
-                    data["api_wake_endpoint"] = discovered_endpoints["wake"]
-                _LOGGER.info(
-                    "API endpoint discovery successful: %s",
-                    discovered_endpoints
-                )
-                
-                # Recreate API client with discovered endpoints
-                api = BloominAPI(
-                    bloomin_ip,
-                    discovered_endpoints.get("upload"),
-                    discovered_endpoints.get("wake")
-                )
-            else:
-                _LOGGER.warning(
-                    "API endpoint discovery failed, will use default endpoints. "
-                    "Wake test may fail if defaults don't match your device."
-                )
-            
-            # Test wake with discovered or default endpoints
             wake_success = await api.wake_device()
             if wake_success:
                 wake_method_used = "HTTP API"
@@ -252,7 +266,7 @@ class BloominPresenceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
         from .options_flow import BloominPresenceOptionsFlowHandler
-        return BloominPresenceOptionsFlowHandler(config_entry)
+        return BloominPresenceOptionsFlowHandler()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -281,8 +295,15 @@ class BloominPresenceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema_dict = {
             vol.Required(CONF_NAME, default="BLOOMIN Presence Display"): str,
             vol.Required(CONF_BLOOMIN_IP): str,
-            vol.Required(CONF_PERSON_ENTITY): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="person")
+            vol.Required(
+                CONF_PERSON_ENTITIES,
+                default=user_input.get(CONF_PERSON_ENTITIES, []) if user_input else []
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain="person",
+                    multiple=True,
+                    filter={"domain": "person"}
+                )
             ),
             vol.Required(
                 CONF_IMAGE_SOURCE, default=DEFAULT_IMAGE_SOURCE
@@ -309,9 +330,9 @@ class BloominPresenceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     translation_key="overlay_position",
                 )
             ),
-                vol.Optional(
-                    CONF_OVERLAY_STYLE, default=DEFAULT_OVERLAY_STYLE
-                ): selector.SelectSelector(
+            vol.Optional(
+                CONF_OVERLAY_STYLE, default=DEFAULT_OVERLAY_STYLE
+            ): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=[
                             OVERLAY_STYLE_BADGE,
@@ -321,22 +342,22 @@ class BloominPresenceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         translation_key="overlay_style",
                     )
                 ),
-                vol.Optional(
-                    CONF_IMAGE_QUALITY, default=DEFAULT_IMAGE_QUALITY
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
-                vol.Optional(
-                    CONF_OVERLAY_BADGE_SIZE, default=DEFAULT_OVERLAY_BADGE_SIZE
-                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=200)),
-                vol.Optional(
-                    CONF_OVERLAY_ICON_SIZE, default=DEFAULT_OVERLAY_ICON_SIZE
-                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=200)),
-                vol.Optional(
-                    CONF_OVERLAY_FONT_SIZE, default=DEFAULT_OVERLAY_FONT_SIZE
-                ): vol.All(vol.Coerce(int), vol.Range(min=8, max=72)),
-                vol.Optional(
-                    CONF_OVERLAY_MARGIN, default=DEFAULT_OVERLAY_MARGIN
-                ): vol.All(vol.Coerce(int), vol.Range(min=0, max=100)),
-            }
+            vol.Optional(
+                CONF_IMAGE_QUALITY, default=DEFAULT_IMAGE_QUALITY
+            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+            vol.Optional(
+                CONF_OVERLAY_BADGE_SIZE, default=DEFAULT_OVERLAY_BADGE_SIZE
+            ): vol.All(vol.Coerce(int), vol.Range(min=10, max=200)),
+            vol.Optional(
+                CONF_OVERLAY_ICON_SIZE, default=DEFAULT_OVERLAY_ICON_SIZE
+            ): vol.All(vol.Coerce(int), vol.Range(min=10, max=200)),
+            vol.Optional(
+                CONF_OVERLAY_FONT_SIZE, default=DEFAULT_OVERLAY_FONT_SIZE
+            ): vol.All(vol.Coerce(int), vol.Range(min=8, max=72)),
+            vol.Optional(
+                CONF_OVERLAY_MARGIN, default=DEFAULT_OVERLAY_MARGIN
+            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=100)),
+        }
         
         # Conditionally add image source specific fields
         if image_source == IMAGE_SOURCE_FOLDER:

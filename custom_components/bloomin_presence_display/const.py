@@ -10,6 +10,7 @@ CONF_BLE_SERVICE_UUID: Final = "ble_service_uuid"
 CONF_BLE_CHARACTERISTIC_UUID: Final = "ble_characteristic_uuid"
 CONF_USE_BLE_WAKE: Final = "use_ble_wake"
 CONF_PERSON_ENTITY: Final = "person_entity"
+CONF_PERSON_ENTITIES: Final = "person_entities"  # For multiple person support
 CONF_IMAGE_SOURCE: Final = "image_source"
 CONF_MEDIA_FOLDER: Final = "media_folder"
 CONF_IMAGE_PATH: Final = "image_path"

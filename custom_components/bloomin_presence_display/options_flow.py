@@ -6,8 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry, OptionsFlow
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.config_entries import OptionsFlow
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -49,10 +48,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class BloominPresenceOptionsFlowHandler(OptionsFlow):
     """Handle options flow for BLOOMIN Presence Display."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

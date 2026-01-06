@@ -6,20 +6,28 @@
         "data": {
           "name": "이름",
           "bloomin_ip": "BLOOMIN IP 주소",
-          "person_entity": "Person 엔티티",
+          "person_entities": "Person 엔티티 (1-4명)",
           "image_source": "이미지 소스",
           "media_folder": "폴더 이름 (media 폴더 내)",
           "image_path": "파일 경로 (절대 경로 또는 media 기준 상대 경로)",
           "use_ble_wake": "BLE 깨우기 사용 (블루투스 어댑터 필요)",
           "ble_mac_address": "BLE MAC 주소 (형식: AA:BB:CC:DD:EE:FF)",
           "overlay_position": "오버레이 위치",
-          "overlay_style": "오버레이 스타일"
+          "overlay_style": "오버레이 스타일",
+          "image_quality": "이미지 품질 (1-100)",
+          "overlay_badge_size": "배지 크기 (10-200 픽셀)",
+          "overlay_icon_size": "아이콘 크기 (10-200 픽셀)",
+          "overlay_font_size": "폰트 크기 (8-72 픽셀)",
+          "overlay_margin": "오버레이 여백 (0-100 픽셀)"
         },
-        "description": "BLOOMIN Presence Display를 설정합니다. '폴더'를 선택하면 폴더 내 최신 이미지를 자동으로 사용하고, '파일'을 선택하면 특정 이미지 파일을 사용합니다. Person 엔티티 상태가 변경되면 재실 상태 오버레이가 자동으로 추가됩니다."
+        "description": "BLOOMIN Presence Display를 설정합니다. '폴더'를 선택하면 폴더 내 최신 이미지를 자동으로 사용하고, '파일'을 선택하면 특정 이미지 파일을 사용합니다. 1-4명의 Person 엔티티를 선택하여 모니터링할 수 있습니다. 선택한 Person 엔티티 중 한 명이라도 상태가 변경되면 재실 상태 오버레이가 자동으로 추가됩니다."
       }
     },
     "error": {
       "person_entity_not_found": "Person 엔티티를 찾을 수 없습니다",
+      "person_entities_required": "최소 1명의 Person 엔티티가 필요합니다",
+      "person_entities_max_exceeded": "최대 4명의 Person 엔티티만 선택할 수 있습니다",
+      "person_entity_invalid_domain": "선택한 엔티티가 Person 엔티티가 아닙니다",
       "image_path_not_found": "이미지 경로를 찾을 수 없습니다",
       "image_path_not_file": "이미지 경로가 파일이 아닙니다",
       "image_path_required": "파일 소스를 사용하는 경우 이미지 경로가 필요합니다",

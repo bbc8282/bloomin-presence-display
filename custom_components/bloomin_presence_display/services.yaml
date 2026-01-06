@@ -1,0 +1,19 @@
+update_display:
+  name: Update Display
+  description: Manually update the BLOOMIN display with current presence status.
+  fields:
+    entity_id:
+      name: Entity
+      description: The BLOOMIN Presence Display entity to update.
+
+upload_image:
+  name: Upload Image
+  description: Upload a specific image to the BLOOMIN display.
+  fields:
+    entity_id:
+      name: Entity
+      description: The BLOOMIN Presence Display entity to update.
+    image_path:
+      name: Image Path
+      description: Path to the image file to upload (absolute or relative to media directory).
+

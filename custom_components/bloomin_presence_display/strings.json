@@ -6,7 +6,7 @@
         "data": {
           "name": "Name",
           "bloomin_ip": "BLOOMIN IP Address",
-          "person_entity": "Person Entity",
+          "person_entities": "Person Entities (1-4 persons)",
           "image_source": "Image Source",
           "media_folder": "Folder Name (in media directory)",
           "image_path": "File Path (absolute or relative to media)",
@@ -20,11 +20,14 @@
           "overlay_font_size": "Font Size (8-72 pixels)",
           "overlay_margin": "Overlay Margin (0-100 pixels)"
         },
-        "description": "Configure BLOOMIN Presence Display. Choose 'Folder' to automatically use the latest image from a folder, or 'File' to use a specific image file. Images will be processed with presence status overlay when person entity state changes."
+        "description": "Configure BLOOMIN Presence Display. Choose 'Folder' to automatically use the latest image from a folder, or 'File' to use a specific image file. Select 1-4 person entities to monitor. Images will be processed with presence status overlay when any person entity state changes."
       }
     },
     "error": {
       "person_entity_not_found": "Person entity not found",
+      "person_entities_required": "At least one person entity is required",
+      "person_entities_max_exceeded": "Maximum 4 person entities allowed",
+      "person_entity_invalid_domain": "Selected entity is not a person entity",
       "image_path_not_found": "Image path not found",
       "image_path_not_file": "Image path is not a file",
       "image_path_required": "Image path is required when using file source",
